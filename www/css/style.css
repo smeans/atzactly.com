@@ -1,0 +1,39 @@
+* {
+	font-family: 'Nanum Gothic', sans-serif;
+	
+	margin: 0;
+	padding: 0;
+
+	box-sizing: border-box;
+}
+
+html, body {
+	height: 100%;
+	width: 100%;
+
+	overflow: hidden;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+}
+
+header {
+	display: flex;
+	justify-content: center;
+}
+
+main {
+	display: flex;
+
+	flex-grow: 1;
+
+	justify-content: center;
+	align-items: center;
+}
+
+#datepicker {
+	font-size: 4vw;
+	border: none;
+}

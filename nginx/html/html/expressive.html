@@ -1,0 +1,1971 @@
+<script>
+class ExpressiveElement extends PhElement {
+    static currentMenu = null;
+
+    static checkMenuCancel(e) {
+        switch (e.type) {
+            case 'keyup': {
+                if (e.code == 'Escape') {
+                    ExpressiveElement.hideContextMenu();
+                }
+            } break;
+
+            case 'mousedown': {
+                if (!e.target.closest('x-menu')) {
+                    ExpressiveElement.hideContextMenu();
+                }
+            } break;
+        }
+    }
+
+    static hideContextMenu() {
+        const menu = ExpressiveElement.currentMenu;
+        if (!menu) {
+            return;
+        }
+
+        menu.ownerDocument.body.removeEventListener('mousedown', ExpressiveElement.checkMenuCancel, true);
+        menu.ownerDocument.body.removeEventListener('keyup', ExpressiveElement.checkMenuCancel);
+
+        menu.remove();
+        ExpressiveElement.currentMenu = null;
+    }
+
+    static showContextMenu(e, menu) {
+        ExpressiveElement.hideContextMenu();
+
+        ExpressiveElement.currentMenu = menu;
+
+        document.body.appendChild(menu);
+        menu.classList.add('active');
+        const x = Math.max(0, Math.min(e.clientX,
+                document.body.offsetWidth-menu.offsetWidth));
+        const y = Math.max(0, Math.min(e.clientY,
+                document.body.offsetHeight-menu.offsetHeight));
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+
+        menu.ownerDocument.body.addEventListener('mousedown', ExpressiveElement.checkMenuCancel, true);
+        menu.ownerDocument.body.addEventListener('keyup', ExpressiveElement.checkMenuCancel);
+    }
+
+    constructor() {
+        super();
+
+        this.addEventListener('contextmenu', (e) => {
+            this.handleContextMenu(e);
+        }, true);
+    }
+
+    get selection() {
+        return this.shadowRoot.getSelection();
+    }
+
+    get defaultSlot() {
+        return this.sq('//slot');
+    }
+
+    get actualParent() {
+        return this.parentElement || this.shadowRoot.host;
+    }
+
+    handleContextMenu(e) {
+        const menu = this.buildContextMenu();
+
+        if (!menu) {
+            return;
+        }
+
+        ExpressiveElement.hideContextMenu();
+
+        e.preventDefault();
+
+        ExpressiveElement.showContextMenu(e, menu);
+
+        return false;
+    }
+
+    handlePopupMenu(e, menu) {
+        ExpressiveElement.hideContextMenu();
+
+        e.preventDefault();
+
+        ExpressiveElement.showContextMenu(e, menu);
+
+        return false;
+    }
+
+    fireEvent(eventName, detail=null) {
+        const e = new CustomEvent(eventName, {
+            bubbles: true,
+            composed: true,
+            detail: detail
+        });
+
+        this.dispatchEvent(e);
+    }
+
+    buildContextMenu(menuDefinitions) {
+        menuDefinitions = menuDefinitions || [];
+        let el = this;
+
+        while (el)  {
+            const md = el.menuDefinition;
+
+            while (md && md.length) {
+                menuDefinitions.unshift(md.pop());
+            }
+
+            el = el.actualParent;
+        }
+
+        if (!menuDefinitions.length) {
+            return null;
+        }
+
+        let menu = document.createElement('x-menu');
+
+        menuDefinitions.forEach(i => {
+            const menuItem = document.createElement('x-menuitem');
+            menuItem.definition = i;
+            menu.appendChild(menuItem);
+        });
+
+        return menu;
+    }
+
+    _syncDisplay() {
+        for (const node in allChildNodes(this)) {
+            node._syncDisplay && node._syncDisplay();
+        }
+        for (const node in allChildNodes(this.shadowRoot)) {
+            node._syncDisplay && node._syncDisplay();
+        }
+    }
+}
+
+function clearElement(el) {
+    el.innerText = '';
+}
+
+function formToJson(form) {
+    const data = {};
+    form.querySelectorAll('*[name]').forEach((el) => {
+        if (el.checkValidity && !el.checkValidity()) {
+            el.reportValidity && el.reportValidity();
+
+            throw new RangeError(`'${el.name}' is invalid`);
+        }
+
+        data[el.name] = el.value;
+    });
+
+    return data;
+}
+
+function clearFields(form) {
+    form.querySelectorAll('*[name]').forEach((el) => {
+        el.value = null;
+    });
+}
+
+function contentEditableText(el) {
+    const lines = [];
+
+    for (const nd of el.childNodes) {
+        switch (nd.nodeType) {
+            case Node.TEXT_NODE: {
+                lines.push(nd.nodeValue);
+            } break;
+
+            default: {
+                lines.push(nd.innerText.trim());
+            } break;
+        }
+    }
+
+    return lines.join('\n');
+}
+</script>
+
+<style>
+    x-multicheck::selection,
+    x-multicheck>*::selection {
+        background: transparent;
+    }
+</style>
+<ph-components>
+    <template name="x-hbox">
+<style>
+:host {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+:host(.top) {
+    align-items: flex-start;
+}
+
+:host(.middle) {
+    align-items: center;
+}
+
+:host(.bottom) {
+    align-items: flex-end;
+}
+
+:host(.stretch) {
+    align-items: stretch;
+}
+
+:host(.left) {
+    justify-content: flex-start;
+}
+
+:host(.center) {
+    justify-content: center;
+}
+
+:host(.right) {
+    justify-content: flex-end;
+}
+
+:host(.space-around) {
+    justify-content: space-around;
+}
+
+:host(.space-between) {
+    justify-content: space-between;
+}
+
+:host(.space-evenly) {
+    justify-content: space-evenly;
+}
+</style>
+        <slot></slot>
+        <script>
+            class XHbox extends ExpressiveElement {
+
+            }
+        </script>
+    </template>
+
+    <template name="x-vbox">
+        <style>
+            :host {
+                display: flex;
+                flex-direction: column;
+            }
+
+            :host(.top) {
+                justify-content: flex-start;
+            }
+
+            :host(.middle) {
+                justify-content: center;
+            }
+
+            :host(.bottom) {
+                justify-content: flex-end;
+            }
+
+            :host(.stretch) {
+                align-items: stretch;
+            }
+
+            :host(.left) {
+                align-items: flex-start;
+            }
+
+            :host(.center) {
+                align-items: center;
+            }
+
+            :host(.right) {
+                align-items: flex-end;
+            }
+        </style>
+        <slot></slot>
+        <script>
+            class XVbox extends ExpressiveElement {
+
+            }
+        </script>
+    </template>
+
+    <template name="x-help">
+        <style>
+            :host {
+                display: inline-block;
+                height: 1em;
+                width: 1em;
+
+                line-height: 1em;
+
+            }
+        </style>
+            <x-svg src="svg/help.svg" style="fill: #0ea36f" aria-hidden="true"></x-svg>
+        <script>
+            class XHelp extends ExpressiveElement {
+
+            }
+        </script>
+    </template>
+
+    <template name="x-tags">
+        <style>
+            :host {
+                display: block;
+            }
+        </style>
+        <slot></slot>
+        <script>
+            class XTags extends ExpressiveElement {
+
+            }
+        </script>
+    </template>
+
+    <template name="x-date">
+        <style>
+            :host {
+                display: inline-block;
+                white-space: nowrap;
+            }
+            slot {
+                display: none;
+            }
+        </style>
+        <slot></slot>
+        <div id="output"></div>
+        <script>
+            class XDate extends ExpressiveElement {
+                static mappedAttributes = {"data-datestyle": "dateStyle"};
+
+                constructor() {
+                    super();
+                    this.refresh();
+                }
+
+                connectedCallback() {
+                    let observer = new MutationObserver((mutations) => {
+                        this.refresh();
+                    });
+
+                    observer.observe(this, {childList: true});
+                }
+
+                get dateStyle() {
+                    return this._dateStyle || 'long';
+                }
+
+                set dateStyle(newDateStyle) {
+                    this._dateStyle = newDateStyle;
+                    this.refresh();
+                }
+
+                refresh() {
+                    const date = new Date(this.textContent);
+
+                    this.g.output.innerText = date.toLocaleDateString(undefined, {
+                        "dateStyle": this.dateStyle
+                    });
+                }
+            }
+        </script>
+    </template>
+
+   <template data-name="x-spacer">
+        <style>
+            :host {
+                display: block;
+                flex-grow: 1;
+            }
+        </style>
+        <slot></slot>
+        <script>
+            class XSpacer extends ExpressiveElement {
+
+            }
+        </script>
+    </template>
+
+    <template name="x-term-icon">
+        <style>
+            :host {
+                display: block;
+            }
+
+            #icon {
+                width:  100%;
+                height:  100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #svg {
+                stroke:  white;
+                margin-top: .25rem;
+            }
+        </style>
+        <div id="icon">
+            <x-svg id="svg" class="term-icon"></x-svg>
+        </div>
+        <script>
+            class XTermIcon extends ExpressiveElement {
+                static mappedAttributes = {"type": "type"};
+
+                get type() {
+                    return this._type;
+                }
+
+                set type(newType) {
+                    console.debug(`new type ${newType}`);
+                    this._type = newType;
+                    this._refresh();
+                }
+
+                _refresh() {
+                    this.g.svg.src = `/svg/term-icon-${this._type}.svg`;
+                    this.g.icon.style.background = `var(--term-${this._type})`;
+                    this.g.icon.title = this._type;
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-multicheck">
+        <style>
+            :host {
+                display: block;
+                user-select: text;
+            }
+
+            ::slotted(*) {
+                display: inline-block;
+                white-space: nowrap;
+            }
+        </style>
+        <slot id="slot"></slot>
+        <script>
+            class XMulticheck extends ExpressiveElement {
+                constructor() {
+                    super();
+
+                    this.g.slot.addEventListener('input', (e) => {
+                        const item = this.getItem(e.target);
+                        item.classList.toggle('checked', e.target.checked);
+                    });
+
+                    document.addEventListener('selectstart', (e) => {
+                        this._selectToggle = null;
+                    });
+
+                    document.addEventListener('selectionchange', (e) => {
+                        const items = this.getSelectedItems();
+                        if (this._selectToggle == null && items.length) {
+                            this._selectToggle = !items[0].classList.contains('checked');
+                        }
+
+                        items.forEach((item) => {
+                            item.classList.toggle('checked', this._selectToggle);
+                            item.querySelector('input[type=checkbox]').checked = this._selectToggle;
+                        });
+                    });
+                }
+
+                getItem(target) {
+                    while (target && target.parentElement != this) {
+                        target = target.parentElement;
+                    }
+
+                    return target;
+                }
+
+                getSelectedItems() {
+                    const items = [];
+
+                    const sel = document.getSelection();
+                    if (sel.isCollapsed) {
+                        return items;
+                    }
+
+                    const range = sel.getRangeAt(0);
+                    let startItem = this.getItem(range.startContainer);
+                    const endItem = this.getItem(range.endContainer);
+
+                    if (!startItem || !endItem) {
+                        return items;
+                    }
+
+                    while (startItem && startItem != endItem) {
+                        if (startItem.nodeType == Node.ELEMENT_NODE) {
+                            items.push(startItem);
+                        }
+
+                        startItem = startItem.nextSibling;
+                    }
+
+                    if (endItem.nodeType == Node.ELEMENT_NODE) {
+                        items.push(endItem);
+                    }
+
+                    return items;
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-button">
+        <style>
+            :host {
+                display: inline-block;
+            }
+
+            button {
+                width: 100%;
+                height: 100%;
+                font-family: inherit;
+                font-size: 100%;
+                background: #0000;
+                margin: 0;
+                padding-top: .3em;
+                overflow: visible;
+                text-transform: none;
+                -webkit-appearance: button;
+                border: none;
+            }
+
+            :host(.disabled) {
+                pointer-events: none;
+                filter: grayscale(100%);
+            }
+
+            :host(.round),
+            :host(.sm-round),
+            :host(.lg-round) {
+                background: var(--accent-bg);
+                border-radius: 50%;
+            }
+
+            :host(.action) {
+                background: var(--action-bg);
+                border-radius: .5em;
+                padding: 0 .25em;
+            }
+
+            :host(.round:hover),
+            :host(.sm-round:hover),
+            :host(.lg-round:hover),
+            :host(.accent:hover) {
+                background: var(--accent-bg-lt);
+            }
+
+            :host(.action:hover) {
+                background: var(--action-bg-lt);
+            }
+
+            :host(.sm-round) {
+                width: var(--small);
+                height: var(--small);
+            }
+
+            :host(.lg-round) {
+                width: var(--large);
+                height: var(--large);
+            }
+
+            :host(.round) button,
+            :host(.sm-round) button,
+            :host(.lg-round) button,
+            :host(.action) button {
+                color: #fff;
+                fill: #fff;
+            }
+
+            :host(.action) button {
+                display: flex;
+                justify-content: space-evenly;
+            }
+
+            :host(.accent) ::slotted(x-svg) {
+                fill:  #fff;   
+            }
+        </style>
+        <button id="button" type="button"><slot></slot></button>
+        <script>
+            class XButton extends ExpressiveElement {
+                constructor() {
+                    super();
+
+                    this.g.button.addEventListener('click', (e) => {
+                        if (!this._cycleOptions) {
+                            return;
+                        }
+
+                        const label = this.innerText;
+
+                        let i = 0;
+
+                        while (i < this._cycleOptions.length) {
+                            if (this._cycleOptions[i].label == label) {
+                                break;
+                            }
+
+                            i++;
+                        }
+
+                        i++;
+                        i %= this._cycleOptions.length;
+
+                        this._setCycleOption(this._cycleOptions[i]);
+                    });
+                }
+
+                get disabled() {
+                    return this.classList.has('disabled');
+                }
+
+                set disabled(newDisabled) {
+                    this.classList.toggle('disabled', newDisabled);
+                }
+
+                get cycleOptions() {
+                    return this._cycleOptions;
+                }
+
+                set cycleOptions(newCycleOptions) {
+                    this._cycleOptions = newCycleOptions;
+                }
+
+                get value() {
+                    const label = this.innerText;
+
+                    if (this._cycleOptions) {
+                        const co = this._cycleOptions.filter(v => v.label == label);
+
+                        if (co.length) {
+                            return co[0].value;
+                        }
+                    }
+
+                    return label;
+                }
+
+                set value(newValue) {
+                    if (this._cycleOptions) {
+                        const co = this._cycleOptions.filter(v => v.value == newValue);
+
+                        if (co.length) {
+                            this._setCycleOption(co[0]);
+
+                            return;
+                        }
+                    }
+
+                    this.innerText = newValue;
+                }
+
+                _setCycleOption(co) {
+                    this.innerText = co.label;
+                    this.setAttribute('title', co.title);
+                }
+
+            }
+        </script>
+    </template>
+
+    <template name="x-menuitem">
+        <style>
+            :host {
+                padding: .1rem .25rem;
+            }
+
+            :host-context(.menusep) ::slotted(*) {
+                border-top: .1rem solid var(--menu-text);
+            }
+
+            * {
+                padding: .1rem .25rem;
+            }
+
+            x-icon,
+            x-content,
+            x-accel,
+            x-action {
+                display: table-cell;
+            }
+
+            x-icon {
+                min-width: 1em;
+            }
+
+            x-label {
+                min-width: 12em;
+            }
+
+            x-accel {
+                text-align: right;
+                font-size: 80%;
+            }
+
+            x-widget {
+            }
+        </style>
+        <x-icon></x-icon>
+        <x-label></x-label>
+        <x-accel></x-accel>
+        <x-widget></x-widget>
+        <script>
+            class XMenuitem extends ExpressiveElement {
+                _definition = null;
+
+                constructor() {
+                    super();
+
+                    this.addEventListener('click', (e) => {
+                        this._definition
+                                && this._definition.action
+                                && this._definition.action(e);
+
+                        ExpressiveElement.hideContextMenu();
+                    });
+                }
+
+                get definition() {
+                    return this._definition;
+                }
+
+                set definition(newDefinition) {
+                    this._definition = newDefinition;
+                    this._syncDisplay();
+                }
+
+                _syncDisplay() {
+                    super._syncDisplay();
+                    this.sq('x-icon').innerHTML = this._definition.icon || '&nbsp;';
+                    this.sq('x-label').innerHTML = this._definition.label;
+                    this.sq('x-accel').innerHTML = this._definition.accel || '';
+                    this.sq('x-widget').innerHTML = this._definition.widget || '';
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-svg">
+      <style>
+        :host {
+            display: inline-block;
+        }
+        div, svg {
+            width: 100%;
+            height: -moz-available;
+            height: -webkit-fill-available;
+            height: fill-available;
+        }
+      </style>
+      <div></div>
+      <script>
+        class XSvg extends ExpressiveElement {
+          static mappedAttributes = {"src":"src"};
+          static svgCache = {};
+
+          constructor() {
+            super();
+
+            var src = this.getAttribute('src');
+            if (src) {
+              this.loadSvg(src);
+            }
+          }
+
+          get src() {
+              return this._src;
+          }
+
+          set src(newSrc) {
+              this._src = newSrc;
+
+              if (this.src) {
+                  this.loadSvg(this.src)
+              } else {
+
+              }
+          }
+
+          get baseName() {
+            var src = this.getAttribute('src');
+
+            if (!src) {
+              return null;
+            }
+
+            var pa = src.split('/');
+
+            if (pa.length > 0) {
+              return pa[pa.length-1].split('.')[0];
+            }
+
+            return null;
+          }
+
+          set svg(newSvg) {
+            var sd = this.sq('div');
+
+            clearElement(sd);
+            if (newSvg) {
+                sd.appendChild(newSvg.cloneNode(true));
+            }
+          }
+
+          get svg() {
+            return this.sq('svg');
+          }
+
+          async loadSvg(src) {
+            var _this = this;
+            var sd = _this.sq('div');
+
+            if (src in XSvg.svgCache) {
+              var o = XSvg.svgCache[src];
+
+              if (Array.isArray(o)) {
+                o.push(_this);
+              } else {
+                _this.svg = o;
+              }
+
+              return;
+            }
+
+            XSvg.svgCache[src] = [_this];
+
+            const headers = new Headers();
+            headers.append('X-AllowCache', 'yes');
+
+            fetch(src, {
+                method: 'GET',
+                headers: headers
+            }).then(async (res) => {
+                      var td = document.createElement('div');
+
+                      td.innerHTML = await res.text();
+
+                      var svg = td.querySelector('svg');
+
+                      if (!svg.hasAttribute('viewBox') && (svg.hasAttribute('width')
+                          && svg.hasAttribute('height'))) {
+                        var w = svg.getAttribute('width');
+                        var h = svg.getAttribute('height');
+                        svg.setAttribute('viewBox', "0 0 " + parseInt(w) + ' '
+                            + parseInt(h));
+                        svg.removeAttribute('height');
+                        svg.removeAttribute('width');
+                      }
+
+                      var pel = XSvg.svgCache[src];
+
+                      pel.forEach((el) => {
+                        el.svg = svg;
+                      });
+
+                      XSvg.svgCache[src] = svg;
+                  });
+              }
+        }
+      </script>
+    </template>
+
+    <template name="x-menu">
+        <style>
+            :host {
+                display: none;
+            }
+
+            :host-context(.active) {
+                position: absolute;
+                display: table;
+                background: var(--main-bg);
+                border: .1rem solid var(--menu-text);
+                border-radius: .25rem;
+                box-shadow: .25rem .25rem .125rem grey;
+                font-family: serif;
+                user-select: none;
+            }
+
+            ::slotted(*) {
+                color: var(--menu-text);
+                text-decoration: none !important;
+            }
+
+            ::slotted(x-menuitem) {
+                display: table-row;
+            }
+
+            ::slotted(x-menuitem:hover) {
+                background: var(--menu-hilight);
+            }
+        </style>
+        <slot></slot>
+        <script>
+            class XMenu extends ExpressiveElement {
+            }
+        </script>
+    </template>
+
+    <template name="x-input">
+        <style>
+          x-entry {
+              display: inline-block;
+              outline: none;
+              min-width: 5em;
+          }
+        </style>
+
+        <x-entry autocorrect="false" spellcheck="false" contenteditable="true"><slot></slot></x-entry>
+
+        <script>
+        class XInput extends ExpressiveElement {
+            constructor() {
+                super();
+            }
+        }
+        </script>
+    </template>
+
+    <template name="x-token">
+        <style>
+            :host  {
+                display: inline-block;
+            }
+
+            :host-context(.undefined) x-value {
+                text-decoration: underline wavy var(--accent-attention);
+            }
+
+            :host(.name) {
+                transition: 0s background;
+            }
+
+            :host(.name):hover {
+                background: var(--focus-bg);
+                transition-delay: .45s;
+            }
+
+            :host(.name) {
+                color: var(--ok-text);
+            }
+
+            :host(.operator) {
+                color: var(--accent-text);
+            }
+
+            :host(.number) {
+                color: var(--dead-text);
+            }
+
+            :host(.error) {
+                color: var(--err-text);
+            }
+
+            x-value {
+                display: inline-block;
+            }
+        </style>
+
+        <x-value id="value"><slot></slot></x-value>
+
+        <script>
+            class XToken extends ExpressiveElement  {
+                static mappedAttributes = {
+                    "type": "type",
+                    "value": "value"
+                };
+
+                _type = null;
+
+                connectedCallback() {
+                    this._syncDisplay();
+                    this.g.value.addEventListener('dblclick', (e) => {
+                        e.preventDefault();
+
+                        this.fireEvent('x.openToken', {token: this});
+
+                        return false;
+                    });
+                }
+
+                get type() {
+                    return this._type;
+                }
+
+                set type(newType) {
+                    if (this._type) {
+                        this.classList.remove(this._type);
+                    }
+
+                    this._type = newType;
+                    this.classList.add(this._type);
+                }
+
+                get package() {
+                    if (this._package) {
+                        return this._package;
+                    }
+
+                    const expression = this.closestElement('x-expression');
+
+                    return expression && expression.package;
+                }
+
+                set package(newPackage) {
+                    this._package = newPackage;
+                    this._syncDisplay();
+                }
+
+                get value() {
+                    return this.innerText;
+                }
+
+                set value(newValue) {
+                    this.innerText = newValue;
+                    this._syncDisplay();
+                }
+
+                _syncDisplay() {
+                    super._syncDisplay();
+
+                    this.classList.toggle('undefined',
+                            this.type == 'name' && this.package
+                            && !this.package.getTerm(this.value));
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-expression">
+        <style>
+            x-workarea {
+                display: block;
+                position: relative;
+                width: 100%;
+                height: 100%;
+
+                overflow-x:auto;
+            }
+
+            x-editpane, x-displaypane {
+                display: block;
+                position: absolute;
+                top: 0;
+                left:  0;
+                height: 100%;
+                outline: none;
+                padding: 0 .25rem;
+            }
+
+            x-editpane {
+                color: #0000;
+                caret-color: #000;
+            }
+
+            x-displaypane {
+                display: block;
+                white-space: pre;
+            }
+
+            x-editpane:hover {
+            }
+
+            x-token:hover {
+                background: var(--accent-bg);
+            }
+        </style>
+        <x-workarea>
+            <x-displaypane></x-displaypane>
+            <x-editpane autocorrect="false" spellcheck="false"
+                  contenteditable="true"></x-editpane>
+        </x-workarea>
+        <script>
+            class XExpression extends ExpressiveElement  {
+                static mappedAttributes = {
+                    "initialvalue": "initialValue",
+                    "value": "value",
+                    "disabled": "disabled"
+                };
+
+                static _lexRules = [
+                    ['ws', /\s+/],
+                    ['name', /[a-zA-Z]\w*/],
+                    ['operator', /[=\+\-\*\/%\(\)\[\]]/],
+                    ['error', /./]
+                ];
+
+                static _lexRegex = '(?:' + XExpression._lexRules.map(v => '(?<' + v[0] + '>' + v[1].toString().substr(1, v[1].toString().length-2) + ')').join('|') + ')';
+
+                _package = null;
+
+                constructor() {
+                    super();
+
+                    this.editpane.addEventListener('input', e => this._handleInput(e));
+                    this.ownerDocument.addEventListener('selectionchange', e => this._handleSelectionChange(e));
+                    this.sq('x-workarea').addEventListener('dblclick', e => this._handleDblClick(e));
+                    this.sq('x-workarea').addEventListener('click', e => this.editpane.focus());
+                }
+
+                focus(e) {
+                    this.editpane.focus();
+                }
+
+                get editpane() {
+                    return this.sq('x-editpane');
+                }
+
+                get displaypane() {
+                    return this.sq('x-displaypane');
+                }
+
+                get package() {
+                    return this._package;
+                }
+
+                set package(newPackage) {
+                    this._package = newPackage;
+
+                    this._syncDisplay();
+                }
+
+                get initialValue() {
+                    return this._initialValue;
+                }
+
+                set initialValue(newInitialValue) {
+                    this._initialValue = newInitialValue;
+                    this.value = this.initialValue;
+                }
+
+                get value() {
+                    return this.editpane.innerText;
+                }
+
+                set value(newValue) {
+                    this.editpane.innerText = newValue;
+
+                    this._syncDisplay();
+                }
+
+                get disabled() {
+                    return this.editpane.disabled;
+                }
+
+                set disabled(newDisabled) {
+                    newDisabled = newDisabled.toString() == 'false';
+
+                    if (newDisabled != this.disabled) {
+                        this.editpane.setAttribute('contenteditable', newDisabled);
+                        // https://stackoverflow.com/questions/1125292/how-to-move-cursor-to-end-of-contenteditable-entity
+                        const range = document.createRange();
+                        range.selectNodeContents(this.editpane);
+                        range.collapse(false);
+
+                        const selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+
+                }
+
+                get isDirty() {
+                    return this._initialValue === undefined ?
+                        !!this.value : this.value != this._initialValue;
+                }
+
+                _handleInput(e) {
+                    this._syncDisplay();
+                }
+
+                _handleSelectionChange(e) {
+                    try {
+                        var selection = this.shadowRoot.getSelection(),
+                        range = selection.getRangeAt(0),
+                        rect = range.getClientRects()[0];
+                    } catch {}
+                    // !!!TBD!!! look at doing term completion here
+                }
+
+                _handleDblClick(e) {
+                    const ael = this.shadowRoot.elementsFromPoint(e.clientX, e.clientY);
+                    const token = ael.find(v => v.tagName == 'X-TOKEN');
+
+                    if (token) {
+                        this.fireEvent('x.openToken', {token});
+                    }
+                }
+
+                _syncDisplay() {
+                    const tokens = this.editpane.cloneNode(true);
+
+                    for (const nd of allChildNodes(tokens)) {
+                        if (nd.nodeType == Node.TEXT_NODE) {
+                            this._tokenizeTextNode(nd);
+                        }
+                    }
+
+
+                    this.displaypane.innerHTML = '';
+
+                    const df = this.ownerDocument.createDocumentFragment();
+
+                    while (tokens.firstChild) {
+                        const nd = tokens.firstChild;
+                        nd.remove();
+                        df.appendChild(nd);
+                    }
+
+                    this.displaypane.appendChild(df);
+
+                    this.displaypane.style.width = (this.editpane.offsetWidth + 1) + 'px';
+                    this.displaypane.style.height = this.editpane.offsetHeight + 'px';
+                }
+
+                _tokenizeTextNode(nd) {
+                    const doc = nd.ownerDocument;
+                    const tokens = doc.createDocumentFragment();
+                    const src = nd.nodeValue;
+
+                    for (const match of src.matchAll(XExpression._lexRegex)) {
+                        for (const group in match.groups) {
+                            if (match.groups[group]) {
+                                switch (group) {
+                                    case 'ws': {
+                                        tokens.appendChild(doc.createTextNode(match.groups[group]));
+                                    } break;
+
+                                    default: {
+                                        const token = doc.createElement('x-token');
+                                        token.type = group;
+                                        token.value = match.groups[group];
+
+                                        tokens.appendChild(token);
+                                    } break;
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+
+                    nd.parentNode.insertBefore(tokens, nd);
+                    nd.remove();
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-breadcrumb">
+        <style>
+            :host {
+                display: block;
+                min-height: 1em;
+            }
+
+            x-hbox *:not(:first-child):before {
+                content:  ">";
+            }
+
+            x-crumb {
+                display: inline-block;
+            }
+
+            x-crumb:hover {
+                background: var(--focus-bg);
+            }
+        </style>
+        <x-hbox></x-hbox>
+        <script>
+            class XBreadcrumb extends ExpressiveElement {
+                constructor() {
+                    super();
+
+                    this.sq('x-hbox').addEventListener('click', e => this._handleClick(e));
+                }
+
+                push(crumb) {
+                    const el = this.ownerDocument.createElement('x-crumb');
+                    el.innerText = crumb;
+                    this.sq('x-hbox').appendChild(el);
+                }
+
+                get current() {
+                    const lastCrumb = this.sq('x-hbox').lastElementChild;
+
+                    return lastCrumb ? lastCrumb.innerText : null;
+                }
+
+                _handleClick(e) {
+                    const crumb = e.target.closest('x-crumb');
+
+                    if (!crumb) {
+                        return;
+                    }
+
+                    this.fireEvent('x.crumbPopping');
+
+                    while (crumb.nextElementSibling) {
+                        crumb.nextElementSibling.remove();
+                    }
+
+                    this.fireEvent('x.crumbPopped');
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-editor">
+        <style>
+            x-workarea {
+                display: block;
+                position: relative;
+                width: 100%;
+            }
+        </style>
+        <x-workarea>
+            <x-breadcrumb></x-breadcrumb>
+            <x-expression></x-expression>
+        </x-workarea>
+        <script>
+            class XEditor extends ExpressiveElement {
+                _package = null;
+
+                constructor() {
+                    super();
+
+                    this.shadowRoot.addEventListener('x.openToken', e => {
+                        this.pushName(e.detail.token.value);
+                    });
+
+                    this.shadowRoot.addEventListener('x.crumbPopping', e => {
+                        if (this.bc.current) {
+                            this.save();
+                        }
+                    });
+
+                    this.shadowRoot.addEventListener('x.crumbPopped', e => {
+                        this.openName(this.bc.current);
+                    });
+
+                    this.pushName('(root)');
+                }
+
+                get package() {
+                    return this._package;
+                }
+
+                set package(newPackage) {
+                    this._package = newPackage;
+                    this.expression.package = this.package;
+                    this.openName('(root)');
+                }
+
+                get expression() {
+                    return this.sq('x-expression');
+                }
+
+                get bc() {
+                    return this.sq('x-breadcrumb');
+                }
+
+                pushName(name) {
+                    if (this.bc.current){
+                        this.save();
+                    }
+
+                    this.bc.push(name);
+
+                    this.openName(name);
+                }
+
+                openName(name) {
+                    const term = this.package.getTerm(name);
+
+                    if (!term || term.type !='expression') {
+                        this.expression.value = '';
+
+                        return;
+                    }
+
+                    this.expression.value = term.value;
+                }
+
+                save() {
+                    const name = this.bc.current;
+                    if (!name) {
+                        return;
+                    }
+
+                    this.package.defineExpression(name, this.expression.value);
+
+                    this.fireEvent('x.contextUpdated', {context: this.package});
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-sff">
+        <style>
+            :host(:not(.editing)) x-editarea {
+                display: none;
+            }
+
+            :host(.editing) x-value {
+                display: none;
+            }
+
+            :host(.error) input {
+                border: thin solid red;
+            }
+
+            button {
+                height: 2em;
+                width: 2em;
+                border-radius: 1em;
+            }
+
+            x-value, -editarea {
+                display: inline-block;
+                height: 100%;
+                width: 100%;
+            }
+        </style>
+        <x-value><slot></slot></x-value>
+        <x-editarea>
+            <input id="ti"/>
+            <button id="save"><x-svg src="svg/save.svg"></x-svg></button>
+            <button id="cancel"><x-svg src="svg/x.svg"></x-svg></button>
+        </x-editarea>
+        <script>
+            class XSff extends ExpressiveElement {
+                static mappedAttributes = {
+                    "fieldname": "fieldname",
+                    "apiurl": "apiurl",
+                    "type": "type",
+                    "placeholder": "placeholder"
+                };
+
+                constructor() {
+                    super();
+
+                    this.addEventListener('dblclick', (e) => {
+                        this.startEditing();
+                    });
+
+                    this.g.save.addEventListener('click', (e) => {
+                        this.commitEditing();
+                    });
+
+                    this.g.cancel.addEventListener('click', (e) => {
+                        this.endEditing();
+                    });
+                }
+
+                get fieldname() {
+                    return this._fieldname;
+                }
+
+                set fieldname(newFieldname) {
+                    this._fieldname = newFieldname;
+                }
+
+                get apiurl() {
+                    return this._apiurl;
+                }
+
+                set apiurl(newApiurl) {
+                    this._apiurl = newApiurl;
+                }
+
+                get type() {
+                    return this.g.ti.type;
+                }
+
+                set type(newType) {
+                    this.g.ti.type = newType;
+                }
+
+                get placeholder() {
+                    return this.g.ti.placeholder;
+                }
+
+                set placeholder(newPlaceholder) {
+                    this.g.ti.placeholder = newPlaceholder;
+                }
+
+                startEditing() {
+                    if (this.classList.contains('editing')) {
+                        return;
+                    }
+
+                    switch (this.g.ti.type) {
+                        case 'password': {
+                            this.g.ti.value = '';
+                        } break;
+
+                        default: {
+                            this.g.ti.value = this.innerText;
+                        } break;
+                    }
+                    this.classList.add('editing');
+                }
+
+                commitEditing() {
+                    const body = {};
+                    body[this.fieldname] = this.g.ti.value;
+
+                    this.classList.remove('error');
+
+                    fetch(this.url, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    }).then(resp => {
+                        if (resp.ok) {
+                            this.endEditing();
+                            switch (this.g.ti.type) {
+                                case 'password': break;
+
+                                default: {
+                                    this.innerText = this.g.ti.value;
+                                } break;
+                            }
+                        } else {
+                            this.classList.add('error');
+                        }
+                    });
+                }
+
+                endEditing() {
+                    this.classList.remove('error');
+                    this.classList.remove('editing');
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-term-table">
+        <style>
+            :host {
+                display: block;
+            }
+
+            x-svg {
+                width: 1em;
+                height: fit-content;
+            }
+
+            table {
+                border-spacing: 0;
+            }
+
+            th:not(:first-child)  {
+                border-left: var(--thin) solid var(--border);
+            }
+
+            td:not(:first-child) {
+                border-left: var(--thin) solid var(--border);
+            }
+
+            th, td {
+                padding: .25rem;
+            }
+
+            td {
+                border-top: var(--thin) solid var(--border);
+            }
+
+            select:invalid {
+                color: var(--dead-text);
+            }
+
+            x-template {
+                display: none;
+            }
+
+            x-sff {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+
+            x-button.matchType {
+                width: 28px;
+                height: 28px;
+            }
+
+            .disabled .addCol,
+            .disabled #addRow,
+            .disabled .rowButtons,
+            .disabled th x-button {
+                display: none ;
+            }
+
+            .menu {
+                background: unset;
+            }
+
+            .menu:hover {
+                background: #eee;
+            }
+        </style>
+        <table id="table">
+            <thead>
+                <tr>
+                    <th class="valueCol">
+                        <x-svg src="/svg/left-arrow.svg"></x-svg>
+                        <x-token id="termHeader" type="name"></x-token>
+                    </th>
+                    <th id="addColHeader" class="addCol">
+                        <x-svg src="/svg/key.svg"></x-svg>
+                        <input id="keyTerm" placeholder="(lookup term)" list="freeTerms">
+                        <x-button id="addKeyTerm" class="round">
+                            <x-svg src="svg/plus.svg"></x-svg>
+                        </x-button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="addRow">
+                    <td class="valueCol"><input type="text" name="_value" required/></td>
+                    <td class="addCol">
+                        <x-button id="addRowButton" class="round">
+                            <x-svg src="svg/plus.svg"></x-svg>
+                        </x-button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <datalist id="freeTerms">
+        </datalist>
+        <template id="keyColHeader">
+            <th class="keyCol" data-termname="">
+                <x-button class="matchType round">
+                    =
+                </x-button>
+                <x-token type="name"></x-token>
+                <x-button class="menu round">
+                    <x-svg src="svg/chevron-down.svg"></x-svg>
+                </x-button>
+            </th>
+        </template>
+        <template id="rowButtons">
+            <td class="rowButtons">
+                <x-button class="delete round">
+                    <x-svg src="/svg/trash.svg"></x-svg>
+                </x-button>
+            </td>
+        </template>
+        <template id="addCell">
+            <td>
+                <input type="text" required/>
+            </td>
+        </template>
+        <script>
+            class XTermTable extends ExpressiveElement {
+                static mappedAttributes = {
+                    "disabled": "disabled"
+                };
+
+                static KEY_COLUMN_CYCLE_OPTIONS = [
+                    {
+                        value: 'Exact',
+                        label: '=',
+                        title: 'Match the key value exactly.'
+                    },
+                    {
+                        value: 'ClosestLowValue',
+                        label: '<',
+                        title: 'Match the closest value that is less than or equal to the key value.'
+                    },
+                    {
+                        value: 'ClosestHighValue',
+                        label: '>',
+                        title: 'Match the closest value that is greater than or equal to the key value.'
+                    }
+                ];
+
+                constructor() {
+                    super();
+
+                    this.g.table.addEventListener('dblclick', (e) => {
+                        const token = e.target.closest('x-token');
+
+                        if (token) {
+                            this.fireEvent('x.openToken', {token});
+                        }
+                    });
+
+                    this.g.table.addEventListener('click', (e) => {
+                        if (e.target.closest('x-button.delete')) {
+                            const tr = e.target.closest('tr');
+
+                            this._deleteRow(tr);
+                        } else if (e.target.closest('x-button.menu')) {
+                            const th = e.target.closest('th');
+                            const keyTermName = th.querySelector('x-token').value;
+
+                            this.handlePopupMenu(e, this.buildContextMenu([
+                                {
+                                    "icon": '<x-svg src="/svg/trash.svg"></x-svg>',
+                                    "label": "delete",
+                                    "widget": "",
+                                    "action": (e) => {
+                                        this.fireEvent('x.deleteKeyTerm', {keyTermName});
+                                    }
+                                }
+                            ]))
+                        } else if (e.target.closest('x-button.matchType')) {
+                            const th = e.target.closest('th');
+                            const keyTermName = th.querySelector('x-token').value;
+                            const matchType = e.target.value;
+
+                            this.fireEvent('x.changeKeyTermMatchType', {keyTermName, matchType});
+                        }
+                    });
+
+                    this.g.addKeyTerm.addEventListener('click', (e) => {
+                        this.fireEvent('x.addKeyTerm', {keyTermName: this.g.keyTerm.value});
+                    });
+
+                    this.g.addRowButton.addEventListener('click', (e) => {
+                        const tr = e.target.closestElement('tr');
+
+                        try {
+                            const data = formToJson(tr);
+
+                            this._addRow(data);
+                        } catch {
+
+                        }
+                    });
+                }
+
+                get term() {
+                    return this._term;
+                }
+
+                set term(newTerm) {
+                    this._term = newTerm;
+                    this._syncDisplay();
+                }
+
+                get disabled() {
+                    return this.editpane.disabled;
+                }
+
+                set disabled(newDisabled) {
+                    this.g.table.classList.toggle('disabled', newDisabled.toString() != 'false');
+                }                
+
+                _syncDisplay() {
+                    this.g.termHeader.package =  this.term.package;
+                    this.g.termHeader.value = this.term.name;
+
+                    this._syncKeyColumns();
+
+                    const freeTermNames = Object.keys(this.term.package.terms)
+                        .filter(v => v != this.term.name && !this.term.keyTermNames.has(v));
+
+                    const freeTerms = this.g.freeTerms;
+                    freeTerms.innerHTML = '';
+
+                    freeTermNames.forEach((termName) => {
+                        const option = document.createElement('option');
+                        option.innerText = termName;
+                        freeTerms.appendChild(option);
+                    });
+
+                    this._syncData();
+                }
+
+                _syncKeyColumns() {
+                    const thList = Array.from(this.sqa('thead th[data-termname]'));
+                    const thDict = {};
+                    thList.forEach((th) => { thDict[th.getAttribute('data-termname')] = th.remove()});
+
+                    const tr = this.g.addColHeader.parentElement;
+                    const addCol = this.sq('tbody .addCol');
+                    const doc = this.ownerDocument;
+                    const addCell = this.g.addCell.content.children[0];
+
+                    Array.from(this.term.keyTermNames).forEach((termName) => {
+                        let th = thDict[termName];
+
+                        if (!th) {
+                            let token = doc.createElement('x-token');
+                            th = this.g.keyColHeader.content.children[0].cloneNode(true);
+                        }
+
+                        tr.insertBefore(th, this.g.addColHeader);
+                        th.setAttribute('data-termname', termName);
+
+                        const matchType = th.querySelector('.matchType');
+                        matchType.cycleOptions = XTermTable.KEY_COLUMN_CYCLE_OPTIONS;
+                        matchType.value = this.term.getKeyTermMatchType(termName);
+
+                        const token = th.querySelector('x-token');
+                        token.value = termName;
+                        token.package = this.term.package;
+
+                        const newCell = addCell.cloneNode(true);
+                        newCell.querySelector('input').name = termName;
+                        addCol.parentElement.insertBefore(newCell, addCol);
+                    });
+
+                    this.g.addRow.hidden = this.term.keyTermNames.size <= 0;
+                }
+
+                _makeDataRow(row) {
+                    const rowButtons = this.g.rowButtons.content.children[0].cloneNode(true);
+                    const doc = this.ownerDocument;
+                    const tr = doc.createElement('tr');
+                    tr.setAttribute('data-rowid', row._id);
+
+                    Object.keys(row).filter(k => k != '_id').forEach((col) => {
+                        const td = doc.createElement('td');
+                        const sff =  doc.createElement('x-sff');
+                        sff.fieldname = col;
+                        sff.url = '/api/packages/' + this.term.package.id + '/tables/' + this.term.name + '/rows/' + row._id;
+                        sff.innerText = row[col];
+                        td.appendChild(sff);
+                        tr.appendChild(td);
+                    });
+
+                    tr.appendChild(rowButtons);
+
+                    return tr;
+                }
+
+                async _syncData() {
+                    this.classList.add('busy');
+                    fetch('/api/packages/' + this.term.package.id + '/tables/' + this.term.name)
+                        .then(async resp => {
+                            if (resp.ok) {
+                                const rows = await resp.json();
+                                const addRow = this.g.addRow;
+                                const doc = this.ownerDocument;
+                                const tbody = addRow.parentElement;
+
+                                for (const row of rows) {
+                                    tbody.insertBefore(this._makeDataRow(row), addRow);
+                                }
+                            }
+                        })
+                        .finally(() => {
+                            this.classList.remove('busy');
+                        });
+                }
+
+                async _addRow(data) {
+                    this.classList.add('busy');
+                    await fetch('/api/packages/' + this.term.package.id + '/tables/' + this.term.name, {
+                        method: 'POST',
+                        headers: {
+                          'Accept': 'application/json',
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    }).then(async resp => {
+                            if (resp.ok) {
+                                const row = await resp.json();
+                                const addRow = this.g.addRow;
+                                const tbody = addRow.parentElement;
+                                tbody.insertBefore(this._makeDataRow(row), addRow);
+
+                                clearFields(addRow);
+                                addRow.querySelector('*[name]').focus();
+                            }
+                        })
+                        .finally(() => {
+                            this.classList.remove('busy');
+                        });
+                }
+
+                async _deleteRow(tr) {
+                    const rowId = tr.getAttribute('data-rowid');
+
+                    await fetch('/api/packages/' + this.term.package.id + '/tables/' + this.term.name + '/rows/' + rowId, {
+                        method: 'DELETE'
+                    }).then(async resp => {
+                            if (resp.ok) {
+                                tr.remove();
+                            }
+                        })
+                        .finally(() => {
+                            this.classList.remove('busy');
+                        });
+                }
+            }
+        </script>
+    </template>
+
+    <template name="x-persist-form">
+        <style>
+            :host {
+                display: inline-block;
+            }
+        </style>
+        <slot></slot>
+        <script>
+            class XPersistForm extends ExpressiveElement {
+                static mappedAttributes = {"key": "key"};
+                constructor() {
+                    super();
+
+                    this.addEventListener('input', (e) => {
+                        if (!e.target.name) {
+                            return;
+                        }
+
+                        const data = this.data;
+
+                        data[e.target.name] = e.target.value;
+
+                        this.data = data;
+                    });
+                }
+
+                connectedCallback() {
+                    const data = this.data;
+                    this.querySelectorAll('*[name]').forEach(el => {
+                        if (el.name in data) {
+                            el.value = data[el.name];
+                        }
+                    });
+                }
+
+                get data() {
+                    const item = localStorage.getItem(`persistForm-{this.key}`);
+
+                    return item ? JSON.parse(item) : {};
+                }
+
+                set data(newData) {
+                    localStorage.setItem(`persistForm-{this.key}`, JSON.stringify(newData));
+                }
+
+                get key() {
+                    return this._key;
+                }
+
+                set key(newKey) {
+                    this._key = newKey;
+                }
+            }
+        </script>
+    </template>
+</ph-components>

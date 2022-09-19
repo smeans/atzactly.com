@@ -1,0 +1,257 @@
+/*
+    https://theemer.com/?colors=778899-8ea32f-8ea3af-0e236f-0e23ef-0ea36f-000000-ffffff-8b0000-ff0000-eeeeee-fafad2-ff4500
+*/
+:root{
+    --main-bg: #fff;
+    --border: #778899;
+    --ok-text: #0ea36f;
+    --err-text: #ff0000;
+    --dead-text: #8ea3af;
+    --accent-text: #0e23ef;
+    --accent-attention: #ff4500;
+    --accent-bg: #87cefa;
+    --accent-bg-lt: #87cefa94;
+    --action-bg: #4F46E5;
+    --action-bg-lt: #6366f1;
+    --border: #727272;
+    --menu-text: #111111;
+    --menu-hilight: #dddddd;
+    --focus-bg: #fafad2;
+    --thin: 1pt;
+    --med: 2pt;
+    --thick: 3pt;
+    --margin: 2pt;
+    --small: 1.5em;
+    --large: 4em;
+    --card-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    --big-tile-h: 10em;
+    --big-tile-w: 16em;
+    --flatblue: #415272;
+    --flatblue-500: #41527288;
+    --ltpurple: #BD66BF55;
+    --dkpurple: #BD66BFaa;
+
+    --term-constant: #5779da;
+    --term-input: #ffa956;
+    --term-expression: #cd8bcf;
+    --term-table: #79c7c4;
+    --term-integration: #3b4662;
+    --term-peril: #e56f69;
+
+    --fastest: .2s;
+    --faster: .3s;
+    --fast: .5s;
+
+    --development-bg: rgba(219, 234, 254, var(--tw-bg-opacity));
+    --staging-bg: rgba(254, 243, 199, var(--tw-bg-opacity));
+    --production-bg: rgba(209, 250, 229, var(--tw-bg-opacity));
+}
+
+/*
+ *  icons
+ *
+ *  https://fonts.google.com/icons?selected=Material+Icons&icon.style=Outlined
+ *  https://heroicons.com/
+ */
+
+html, body {
+    background: var(--main-bg);
+    font-family: "Source Serif Pro", serif;
+}
+
+html, body, main, x-page {
+    height: 100vh;
+}
+
+body {
+    overflow-y: hidden;
+}
+
+main {
+    overflow-y: scroll;
+}
+
+header x-input  {
+    font-size: 4vh;
+    font-weight: 500;
+}
+
+rc-packages {
+    display: flex;
+    max-width: 120em;
+}
+
+button.round {
+    border: none;
+    border-radius: 25%;
+}
+
+button[disabled] {
+    opacity: .5;
+}
+
+.inactive {
+    filter: grayscale(100%);
+    opacity: .5;
+}
+
+x-page>header {
+    display: flex;
+    grid-area: header;
+}
+
+x-page>x-sidebar {
+    display: flex;
+    flex-direction: column;
+
+    grid-area: sidebar;
+}
+
+x-page>x-content {
+    display: flex;
+
+    grid-area: content;
+}
+
+a {
+  color: #00B7FF;
+}
+
+/* dashboard styles */
+
+x-tiles {
+    user-select: none;
+}
+
+.large x-tile.addNew {
+    align-items: center;
+    justify-content: center;
+}
+
+#packages rc-package-tile:hover {
+    background: var(--focus-bg);
+}
+
+#packages rc-package-tile:active {
+    box-shadow: none;
+}
+
+#packages rc-package-tile.editing:hover {
+    background: inherit;
+}
+
+#packages rc-package-tile.editing:hover,
+#packages rc-package-tile.editing:active
+{
+    background: inherit;
+    box-shadow: var(--card-shadow);
+}
+
+.large x-tile h1 {
+    font-size: 200%;
+}
+
+.large x-tile.addNew:hover,
+.large x-tile.addNew:active {
+    background: inherit;
+    box-shadow: var(--card-shadow);
+}
+
+#addProduct {
+    stroke: #fff;
+    fill: #fff;
+}
+
+x-svg {
+    display: inline-block;
+    width: 1em;
+    height: fit-content;
+}
+
+h1 x-svg {
+    display: inline-block;
+    margin-right: .25em;
+}
+
+#terms .iconarea x-svg {
+    fill: #fff;
+    stroke: #fff;
+}
+
+x-expression {
+    font-family: "Source Code Pro", monospace;
+    font-weight: 600;
+
+    display: block;
+    background: #eee;
+    height: 4em;
+    outline-style: solid;
+    outline-color: var(--ltpurple);
+}
+
+x-expression:focus {
+    outline-color: var(--dkpurple);
+}
+
+.term {
+    font-family: "Source Code Pro", monospace;
+    font-weight: 600;
+}
+
+aside details summary {
+    background-color: rgb(67, 56, 202);
+    color: #fff;
+}
+
+aside details summary select {
+    color: #000;
+}
+
+.searchable * {
+    max-height: 100vh;
+}
+
+.unmatched {
+    transform: scaleY(0.0);
+    max-height: 0px;
+    transition: max-height transform .25s;
+}
+
+x-multicheck .checked {
+    background: rgb(67, 56, 202);
+    color: white;
+}
+
+x-multicheck label {
+    padding: .25em .5em;
+    border-radius: .5em;
+    margin: .125rem 0;
+}
+
+.bg-flatblue {
+    background-color: var(--flatblue);
+}
+
+.bg-flatblue-500, .hover\:bg-flatblue-500:hover {
+    background-color: var(--flatblue-500);
+}
+
+*[disabled].hover\:bg-flatblue:hover {
+    background-color: var(--flatblue);
+}
+
+.term-icon {
+    stroke:  white;
+}
+
+.development-bg {
+    background: var(--development-bg);
+}
+
+.staging-bg {
+    background: var(--staging-bg);
+}
+
+.production-bg {
+    background: var(--production-bg);
+}
