@@ -83,13 +83,13 @@ function refreshEventUrl() {
 
 function makeEventUrl(date) {
 	const datePart = [date.getFullYear(),
-		(date.getMonth()+1).toString().padStart(2, '0'),
-		(date.getDate()).toString().padStart(2, 0)
+		(date.getUTCMonth()+1).toString().padStart(2, '0'),
+		(date.getUTCDate()).toString().padStart(2, 0)
 	];
 
 	const timePart = [
-		(date.getHours()+1).toString().padStart(2, '0'),
-		(date.getMinutes()).toString().padStart(2, '0')
+		(date.getUTCHours()+1).toString().padStart(2, '0'),
+		(date.getUTCMinutes()).toString().padStart(2, '0')
 	];
 
 	return new URL(`/${datePart.join('-')}/${timePart.join('-')}`,
@@ -102,9 +102,9 @@ function parseEventUrl(url) {
 	const match = url.pathname.match(urlRe);
 
 	try {
-		return match && new Date(match.groups.year, parseInt(match.groups.month)-1,
+		return match && new Date(Date.UTC(match.groups.year, parseInt(match.groups.month)-1,
 				match.groups.date,
-				parseInt(match.groups.hour)-1, match.groups.minute);
+				parseInt(match.groups.hour)-1, match.groups.minute));
 	} catch {
 		return null;
 	}
