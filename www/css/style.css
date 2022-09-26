@@ -10,6 +10,9 @@
 html, body {
 	height: 100%;
 	width: 100%;
+	position: relative;
+
+	background: #dbebff;
 
 	overflow: hidden;
 }
@@ -22,6 +25,13 @@ body {
 header {
 	display: flex;
 	justify-content: center;
+}
+
+header h1 {
+	background: #dbffdd;
+	padding: .5rem 1rem;
+	border-bottom-left-radius: 1rem;
+	border-bottom-right-radius: 1rem;
 }
 
 main, #homePage.active {
@@ -55,9 +65,12 @@ x-page.active {
 	border: none;
 }
 
-#eventurl {
+#eventurlContainer {
 	padding-top: 3rem;
-	font-size: 60%;
+}
+
+#eventurl {
+	font-size: 70%;
 	user-select: all;
 }
 
@@ -67,18 +80,64 @@ x-page {
 	height: 100%;
 }
 
-x-clock {
-	display: block;
-	position: relative;
-	width: 80%;
-	height: 80%;
+#eventPage.active {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 }
 
-#clockFace,
-#minuteHand,
-#hourHand {
+#mainClock {
+	height: 60vmin;
+	width: 60vmin;
+}
+
+#mainDateContainer {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	margin-top: 3rem;
+	font-size: 150%;
+	max-width: 80vw;
+	background: #000;
+	color: #fff;
+	padding: 1.5rem;
+	border-radius: 2rem;
+}
+
+#datepicker {
+    padding: 1rem;
+    border-radius: 1.5rem;	
+}
+
+#copyButton {
+	height: 1rem;
+	width: 1rem;
+	margin-left: .25rem;
+	background: none;
+	border: none;
+}
+
+#copyButton:hover {
+	background: #fff;
+	border-radius: .25rem;
+}
+
+#copyConfirmation {
+	position: absolute;
 	top: 0;
 	left: 0;
-	position: absolute;
-	transform-origin: center;
+	font-size: 60%;
+	opacity: 0;
+	transform: translateY(-25px);
+
+	transition-property: opacity, transform;
+	transition-duration: 1.7s;
+	transition-timing-function: ease-out;
+}
+
+#copyConfirmation.active {
+	opacity: 1;
+	transform: translateY(5px);
 }

@@ -12,6 +12,320 @@
 
     <script src="/ph/js/ph.js"></script>
     <script src="/js/main.js"></script>
+    <ph-components>
+
+    <template name="x-hbox">
+<style>
+:host {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+:host(.top) {
+    align-items: flex-start;
+}
+
+:host(.middle) {
+    align-items: center;
+}
+
+:host(.bottom) {
+    align-items: flex-end;
+}
+
+:host(.stretch) {
+    align-items: stretch;
+}
+
+:host(.left) {
+    justify-content: flex-start;
+}
+
+:host(.center) {
+    justify-content: center;
+}
+
+:host(.right) {
+    justify-content: flex-end;
+}
+
+:host(.space-around) {
+    justify-content: space-around;
+}
+
+:host(.space-between) {
+    justify-content: space-between;
+}
+
+:host(.space-evenly) {
+    justify-content: space-evenly;
+}
+</style>
+        <slot></slot>
+        <script>
+            class XHbox extends PhElement {
+
+            }
+        </script>
+    </template>
+
+    <template name="x-vbox">
+        <style>
+            :host {
+                display: flex;
+                flex-direction: column;
+            }
+
+            :host(.top) {
+                justify-content: flex-start;
+            }
+
+            :host(.middle) {
+                justify-content: center;
+            }
+
+            :host(.bottom) {
+                justify-content: flex-end;
+            }
+
+            :host(.stretch) {
+                align-items: stretch;
+            }
+
+            :host(.left) {
+                align-items: flex-start;
+            }
+
+            :host(.center) {
+                align-items: center;
+            }
+
+            :host(.right) {
+                align-items: flex-end;
+            }
+        </style>
+        <slot></slot>
+        <script>
+            class XVbox extends PhElement {
+
+            }
+        </script>
+    </template>
+
+    <template name="x-svg">
+      <style>
+        :host {
+            display: inline-block;
+        }
+        div, svg {
+            width: 100%;
+            height: 100%;
+        }
+      </style>
+      <div></div>
+      <script>
+          class XSvg extends PhElement {
+            static mappedAttributes = {"src":"src"};
+            static svgCache = {};
+
+            constructor() {
+              super();
+
+              var src = this.getAttribute('src');
+              if (src) {
+                this.loadSvg(src);
+              }
+            }
+
+            get src() {
+                return this._src;
+            }
+
+            set src(newSrc) {
+                this._src = newSrc;
+
+                if (this.src) {
+                    this.loadSvg(this.src)
+                } else {
+
+                }
+            }
+
+            get baseName() {
+              var src = this.getAttribute('src');
+
+              if (!src) {
+                return null;
+              }
+
+              var pa = src.split('/');
+
+              if (pa.length > 0) {
+                return pa[pa.length-1].split('.')[0];
+              }
+
+              return null;
+            }
+
+            set svg(newSvg) {
+              var sd = this.sq('div');
+
+              sd.innerText = '';
+              if (newSvg) {
+                  sd.appendChild(newSvg.cloneNode(true));
+              }
+            }
+
+            get svg() {
+              return this.sq('svg');
+            }
+
+            async loadSvg(src) {
+              var _this = this;
+              var sd = _this.sq('div');
+
+              if (src in XSvg.svgCache) {
+                var o = XSvg.svgCache[src];
+
+                if (Array.isArray(o)) {
+                  o.push(_this);
+                } else {
+                  _this.svg = o;
+                }
+
+                return;
+              }
+
+              XSvg.svgCache[src] = [_this];
+
+              const headers = new Headers();
+              headers.append('X-AllowCache', 'yes');
+
+              fetch(src, {
+                  method: 'GET',
+                  headers: headers
+              }).then(async (res) => {
+                        var td = document.createElement('div');
+
+                        td.innerHTML = await res.text();
+
+                        var svg = td.querySelector('svg');
+
+                        if (!svg.hasAttribute('viewBox') && (svg.hasAttribute('width')
+                            && svg.hasAttribute('height'))) {
+                          var w = svg.getAttribute('width');
+                          var h = svg.getAttribute('height');
+                          svg.setAttribute('viewBox', "0 0 " + parseInt(w) + ' '
+                              + parseInt(h));
+                          svg.removeAttribute('height');
+                          svg.removeAttribute('width');
+                        }
+
+                        var pel = XSvg.svgCache[src];
+
+                        pel.forEach((el) => {
+                          el.svg = svg;
+                        });
+
+                        XSvg.svgCache[src] = svg;
+                    });
+                }
+          }
+        </script>
+      </template>
+
+      <template name="x-clock">
+        <style>
+          :host {
+            display: block;
+            position: relative;
+            width: 100%;
+            height: 100%;
+          }
+
+          #main {
+            position: relative;
+            width: 100%;
+            height: 100%;
+          }
+
+          #clockFace,
+          #minuteHand,
+          #hourHand {
+            top: 0;
+            left: 0;
+            position: absolute;
+            transform-origin: center;
+            width: 100%;
+            height: 100%;
+          }
+
+          #dayNightIndicator {
+            position: absolute;
+            height: 20%;
+            width: 20%;
+            top: 60%;
+            left: 40%;
+          }
+
+          #moon {
+            display: none;
+          }
+
+          .pm #moon {
+            display: block;
+          }
+
+          .pm #sun {
+            display: none;
+          }
+        </style>
+
+        <div id="main">
+          <x-svg id="clockFace" src="/svg/clock-face.svg"></x-svg>
+
+          <div id="dayNightIndicator">
+            <x-svg id="sun" src="/svg/sun.svg"></x-svg>
+            <x-svg id="moon" src="/svg/moon.svg"></x-svg>
+          </div>
+
+          <x-svg id="minuteHand" src="/svg/minute-hand.svg"></x-svg>
+
+          <x-svg id="hourHand" src="/svg/hour-hand.svg"></x-svg>
+        </div>
+
+        <script>
+          class XClock extends PhElement {
+            get hours() {
+              return this._hours;
+            }
+
+            set hours(newHours) {
+              this._hours = newHours;
+
+              this._refreshDisplay();
+            }
+
+            get minutes() {
+              return this._minutes;
+            }
+
+            set minutes(newMinutes) {
+              this._minutes = newMinutes;
+              this._refreshDisplay();
+            }
+
+            _refreshDisplay() {
+              this.g.hourHand.style.transform = `rotate(${(this._hours/12)*360}deg)`;
+              this.g.minuteHand.style.transform = `rotate(${(this._minutes/60)*360}deg)`;
+
+              this.g.main.classList.toggle('pm', this._hours >= 12);
+            }
+          }
+        </script>
+      </template>
+    </ph-components>
   </head>
   <body>
     <header>
@@ -20,69 +334,24 @@
     <main>
       <x-page id="homePage" class="active">
         <input type="datetime-local" id="datepicker"/>
-        <output id="eventurl"/>
+        <x-hbox id="eventurlContainer">
+          <x-vbox>
+            <output id="eventurl"></output>
+          </x-vbox>
+          <button id="copyButton" title="copy your url to the clipboard"><x-svg src="/svg/copy-icon.svg"></x-svg></button>
+        </x-hbox>
       </x-page>
 
       <x-page id="eventPage">
-        <x-clock>
-          <svg id="clockFace" width="100%" height="100%" viewBox="0 0 1012 1012" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
-              <g transform="matrix(1,0,0,1,-34.4869,-34.4869)">
-                  <g>
-                      <g transform="matrix(1.08696,0,0,1.08696,-41.8034,-34.2134)">
-                          <circle cx="535.256" cy="528.273" r="459.997" style="fill:none;stroke:black;stroke-width:10.14px;"/>
-                      </g>
-                      <path d="M542.328,61.712c-0,952.759 -0,948.104 -0,948.104" style="fill:none;stroke:black;stroke-width:11.03px;"/>
-                      <g transform="matrix(0.866025,-0.5,0.5,0.866025,-195.224,342.943)">
-                          <path d="M542.328,61.712c-0,952.759 -0,948.104 -0,948.104" style="fill:none;stroke:black;stroke-width:11.03px;"/>
-                      </g>
-                      <g transform="matrix(0.5,-0.866025,0.866025,0.5,-192.821,737.551)">
-                          <path d="M542.328,61.712c-0,952.759 -0,948.104 -0,948.104" style="fill:none;stroke:black;stroke-width:11.03px;"/>
-                      </g>
-                      <g transform="matrix(1.66533e-16,-1,1,1.66533e-16,6.56356,1078.09)">
-                          <path d="M542.328,61.712c-0,952.759 -0,948.104 -0,948.104" style="fill:none;stroke:black;stroke-width:11.03px;"/>
-                      </g>
-                      <g transform="matrix(-0.5,-0.866025,0.866025,-0.5,349.506,1273.32)">
-                          <path d="M542.328,61.712c-0,952.759 -0,948.104 -0,948.104" style="fill:none;stroke:black;stroke-width:11.03px;"/>
-                      </g>
-                      <g transform="matrix(-0.866025,-0.5,0.5,-0.866025,744.115,1270.91)">
-                          <path d="M542.328,61.712c-0,952.759 -0,948.104 -0,948.104" style="fill:none;stroke:black;stroke-width:11.03px;"/>
-                      </g>
-                      <g transform="matrix(1.22109,0,0,1.22562,-195.179,-131.859)">
-                          <circle cx="602.069" cy="548.178" r="342.155" style="fill:white;"/>
-                      </g>
-                      <g transform="matrix(1,0,0,1,-1.93965,47.2965)">
-                          <circle cx="541.94" cy="492.703" r="25.991" style="stroke:white;stroke-width:11.03px;"/>
-                      </g>
-                  </g>
-              </g>
-          </svg>
-
-          <svg id="minuteHand" width="100%" height="100%" viewBox="0 0 200 1080" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
-              <g transform="matrix(1,0,0,1,-440,8.70415e-14)">
-                  <g transform="matrix(0.976431,0,0,1.01458,-7.72727,-12.5947)">
-                      <rect x="458.534" y="12.414" width="204.828" height="1064.48" style="fill:none;"/>
-                      <g transform="matrix(0.970589,0,-5.38785e-17,0.788506,-274.929,129.498)">
-                          <path d="M887.5,508.609l0.086,-0l-0.072,0.254l0.072,1.297l-0.439,0l-25.94,91.552l-25.94,-91.552l-0.439,0l0.072,-1.297l-0.072,-0.254l0.086,-0l26.293,-473.276l26.293,473.276Z" style="stroke:black;stroke-width:12.57px;"/>
-                      </g>
-                  </g>
-              </g>
-          </svg>
-
-          <svg  id="hourHand" width="100%" height="100%" viewBox="0 0 200 1080" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
-              <g transform="matrix(1,0,0,1,-440,-8.88178e-15)">
-                  <g transform="matrix(0.976431,0,0,1.01458,-7.72727,-12.5947)">
-                      <rect x="458.534" y="12.414" width="204.828" height="1064.48" style="fill:none;"/>
-                      <g transform="matrix(0.970589,0,-5.38785e-17,0.507668,-274.929,283.187)">
-                          <path d="M887.5,508.609l0.086,-0l-0.072,0.254l0.072,1.297l-0.439,0l-25.94,91.552l-25.94,-91.552l-0.439,0l0.072,-1.297l-0.072,-0.254l0.086,-0l26.293,-473.276l26.293,473.276Z" style="stroke:black;stroke-width:14.46px;"/>
-                      </g>
-                  </g>
-              </g>
-          </svg>
-
-        </x-clock>
-
+        <x-clock id="mainClock"></x-clock>
+        <div id="mainDateContainer">
+          <div id="mainDate"></div>
+        </div>
       </x-page>
     </main>
     <footer>&copy; 2022 Scott Means</footer>
+    <template id="copyConfirmationDiv">
+      <div id="copyConfirmation" class="active">copied!</div>
+    </template>
   </body>
 </html>

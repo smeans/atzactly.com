@@ -1,5 +1,7 @@
 // URL format http://localhost/2022-09-19/04-00
 
+const defaultDateOptions = {year: 'numeric', month: 'long', day: 'numeric'};
+
 document.addEventListener('DOMContentLoaded', () => {
 	phInit();
 });
@@ -21,6 +23,30 @@ document.addEventListener('ph-loaded', () => {
 
 		return;
 	}
+
+	copyButton.addEventListener('click', (e) => {
+		const button = e.target;
+
+		navigator.clipboard.writeText(eventurl.innerText)
+			.then(() => {
+				window['copyConfirmation'] && copyConfirmation.parentElement.removeChild(copyConfirmation);
+
+				document.body.appendChild(copyConfirmationDiv.content.cloneNode(true));
+
+				setTimeout(() => {
+					const buttonRect = button.getBoundingClientRect();
+					const confRect = copyConfirmation.getBoundingClientRect();
+
+
+					copyConfirmation.style.top = `${buttonRect.y - confRect.width/2}px`;
+					copyConfirmation.style.left = `${buttonRect.x + buttonRect.width/2 - confRect.width/2}px`;
+
+					setTimeout(() => {
+						copyConfirmation.classList.remove('active');
+					}, 1);
+				}, 1);
+			});
+	});
 
 	refreshEventUrl();
 });
@@ -87,8 +113,10 @@ function parseEventUrl(url) {
 function showEventPage(eventDate) {
 	const localDate = new Date(eventDate);
 	
-	hourHand.style.transform = `rotate(${(localDate.getHours()/12)*360}deg)`;
-	minuteHand.style.transform = `rotate(${(localDate.getMinutes()/60)*360}deg)`;
+	mainClock.hours = localDate.getHours();
+	mainClock.minutes = localDate.getMinutes();
+
+	mainDate.innerText = localDate.toLocaleDateString(undefined, defaultDateOptions);
 
 	showPage(eventPage);
 }
