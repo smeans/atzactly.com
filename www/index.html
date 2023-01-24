@@ -317,7 +317,7 @@
             }
 
             _refreshDisplay() {
-              this.g.hourHand.style.transform = `rotate(${(this._hours/12)*360}deg)`;
+              this.g.hourHand.style.transform = `rotate(${((this._hours+(this._minutes/60.0))/12)*360}deg)`;
               this.g.minuteHand.style.transform = `rotate(${(this._minutes/60)*360}deg)`;
 
               this.g.main.classList.toggle('pm', this._hours >= 12);
