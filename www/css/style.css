@@ -94,16 +94,36 @@ x-page {
 
 #mainDateContainer {
 	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 
-	margin-top: 3rem;
-	font-size: 150%;
+	margin-top: 1rem;
 	max-width: 80vw;
 	background: #000;
 	color: #fff;
-	padding: 1.5rem;
+	padding: .5rem 1rem;
 	border-radius: 2rem;
+}
+
+#mainDateContainer>* {
+	margin: 0;
+	padding: 0;
+}
+
+#mainTime {
+	font-size: 100%;
+}
+
+#mainDate {
+	font-size: 150%;
+
+}
+
+#timeZone {
+	margin-top: .25rem;
+    color: #ffaf00;
+    font-size: xx-small;
 }
 
 #datepicker {

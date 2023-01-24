@@ -116,7 +116,10 @@ function showEventPage(eventDate) {
 	mainClock.hours = localDate.getHours();
 	mainClock.minutes = localDate.getMinutes();
 
+	mainTime.innerText = localDate.toLocaleTimeString();
 	mainDate.innerText = localDate.toLocaleDateString(undefined, defaultDateOptions);
 
 	showPage(eventPage);
+
+	timeZone.innerText = Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
